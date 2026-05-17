@@ -1,0 +1,28 @@
+name: Daily Article Generation
+
+on:
+  schedule:
+    - cron: '0 18 * * *'   # 毎日 AM 3:00 JST (UTC 18:00)
+  workflow_dispatch:         # 手動実行可（テスト用）
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Generate article
+        env:
+          GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx ts-node --project tsconfig.json system/generate-article.ts
