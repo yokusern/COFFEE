@@ -108,9 +108,14 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* アフィリエイト免責 */}
+      {/* フッター */}
       <footer className="border-t border-gray-100 py-8 px-6 text-center text-xs text-gray-400">
-        <p className="mb-2">本サイトはアフィリエイトプログラムに参加しています。</p>
+        <div className="flex justify-center gap-6 mb-2">
+          <Link href="/about" className="hover:text-gray-600">このサイトについて</Link>
+          <Link href="/privacy" className="hover:text-gray-600">プライバシーポリシー</Link>
+          <Link href="/articles" className="hover:text-gray-600">記事一覧</Link>
+        </div>
+        <p className="mb-1">本サイトはアフィリエイトプログラムに参加しています。</p>
         <p>© 2026 副業ラボ</p>
       </footer>
     </div>
