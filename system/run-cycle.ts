@@ -49,7 +49,7 @@ async function runCycle() {
   const mrr = (revenue ?? []).reduce((s, r) => s + r.amount, 0);
 
   const { count: draftCount } = await db
-    .from('content_articles')
+    .from('articles')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'draft')
     .eq('human_reviewed', false);

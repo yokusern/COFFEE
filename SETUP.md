@@ -1,165 +1,121 @@
-# COFFEE セットアップ手順（1時間で完了）
+# 副業ラボ — セットアップ手順（初回のみ）
 
-コードは完成済み。APIキーを入れてデプロイするだけ。
+## 必要なもの
 
----
-
-## STEP 1 — Supabase キー取得（5分）
-
-1. https://supabase.com/dashboard → プロジェクト「coffee」を開く
-2. 左メニュー「Settings」→「API」
-3. 以下をコピー:
-   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
-   - **anon public** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - **service_role** → `SUPABASE_SERVICE_ROLE_KEY`（絶対に外に出さない）
+- [ ] Supabaseアカウント（無料）
+- [ ] Stripeアカウント（無料）
+- [ ] Gemini APIキー（無料）
+- [ ] Vercelアカウント（無料）
+- [ ] GitHubリポジトリ（GitHubにpush済みであること）
 
 ---
 
-## STEP 2 — Gemini API キー取得（3分・無料）
+## Step 1: Supabase設定（15分）
 
-1. https://aistudio.google.com/app/apikey
-2. 「Create API Key」→ コピー → `GEMINI_API_KEY` に入れる
-3. 無料枠: 1500リクエスト/日
+### 1-1. プロジェクト作成
 
----
+1. [supabase.com](https://supabase.com) → 「New Project」
+2. プロジェクト名：`fukugyo-lab`
+3. パスワードをメモしておく
+4. Region：`Northeast Asia (Tokyo)` を選択
 
-## STEP 3 — Stripe 設定（15分）
+### 1-2. マイグレーション実行
 
-### アカウント作成 / ログイン
-https://dashboard.stripe.com
+SQL Editor（左メニュー）を開いて、以下の順番に実行：
 
-### テストモードで商品作成
-1. 左メニュー「製品カタログ」→「商品を追加」
-2. 商品名: `副業ラボ プロプラン`
-3. 価格: `¥980 / 月` (定期支払い)
-4. 「商品を保存」→ **価格ID** (`price_xxx...`) をコピー → `STRIPE_PRICE_PRO`
-
-### APIキー取得
-「開発者」→「APIキー」
-- `sk_test_xxx...` → `STRIPE_SECRET_KEY`
-- webhookシークレットは STEP 6 でデプロイ後に取得
-
----
-
-## STEP 4 — .env.local を埋める
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://kzbhvjxbtskdxuvwhrhb.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...（Step 1 でコピーしたもの）
-SUPABASE_SERVICE_ROLE_KEY=eyJ...（Step 1 でコピーしたもの）
-
-GEMINI_API_KEY=AIzaSy...（Step 2 でコピーしたもの）
-
-STRIPE_SECRET_KEY=sk_test_...（Step 3 でコピーしたもの）
-STRIPE_WEBHOOK_SECRET=whsec_...（Step 6 でデプロイ後に取得）
-STRIPE_PRICE_PRO=price_...（Step 3 でコピーしたもの）
-
-SENDGRID_API_KEY=（後回しでOK・空欄のままでも起動する）
-SENDGRID_FROM_EMAIL=
-SENDGRID_FROM_NAME=副業ラボ
-
-CRON_SECRET=coffee-cron-2026（何でもいい、ランダムな文字列）
-
-NEXT_PUBLIC_APP_URL=http://localhost:3000（ローカルテスト用）
+```
+supabase/migrations/001_core_schema.sql
+supabase/migrations/002_articles_and_sales.sql
+supabase/migrations/003_fix_revenue_events.sql
+supabase/migrations/004_seed_articles.sql
 ```
 
----
+### 1-3. APIキーを取得
 
-## STEP 5 — Supabase マイグレーション実行（5分）
-
-1. Supabase Dashboard → 「SQL Editor」
-2. 以下の3ファイルを順番に実行（コピペして「Run」）:
-   - `supabase/migrations/001_core_schema.sql`
-   - `supabase/migrations/002_articles_and_sales.sql`
-   - `supabase/migrations/003_fix_revenue_events.sql`
-3. エラーが出なければOK
+Settings → API → 以下をコピー：
+- `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+- `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `service_role` → `SUPABASE_SERVICE_ROLE_KEY`
 
 ---
 
-## STEP 6 — Vercel デプロイ（10分）
+## Step 2: Stripe設定（10分）
+
+### 2-1. 商品と価格を作成
+
+1. [dashboard.stripe.com/products](https://dashboard.stripe.com/products) → 「商品を追加」
+2. 名前：`副業ラボ プロプラン`
+3. 価格：`¥980/月（定期）`
+4. 作成後に表示される「価格ID」（`price_XXXXX`）をコピー → `STRIPE_PRICE_PRO`
+
+### 2-2. APIキーを取得
+
+Developers → API keys：
+- `Publishable key` → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `Secret key` → `STRIPE_SECRET_KEY`
+
+### 2-3. Webhook設定（Vercelデプロイ後）
+
+1. Developers → Webhooks → 「エンドポイントを追加」
+2. URL：`https://[あなたのドメイン]/api/stripe/webhook`
+3. イベント：`checkout.session.completed`, `invoice.payment_succeeded`, `customer.subscription.deleted`
+4. Webhook signing secret → `STRIPE_WEBHOOK_SECRET`
+
+---
+
+## Step 3: Gemini APIキー取得（5分）
+
+1. [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+2. 「Create API key」 → `GEMINI_API_KEY`
+
+---
+
+## Step 4: Vercelデプロイ（10分）
 
 ```bash
-# Vercel CLI インストール（初回のみ）
-npm i -g vercel
-
-# プロジェクトルートで実行
-cd /Users/onoyoukou/Desktop/会社作ろうか/COFFEE
-vercel
-
-# 本番デプロイ
-vercel --prod
+# Vercel CLIでデプロイ
+npx vercel --prod --scope [あなたのスコープ]
 ```
 
-デプロイ後のURL（例: `https://coffee-xxx.vercel.app`）をメモ。
-
-### Vercel 環境変数設定
-Vercel Dashboard → プロジェクト → Settings → Environment Variables
-→ `.env.local` の内容を全部コピー
-→ `NEXT_PUBLIC_APP_URL` は本番URLに変更
+環境変数は `.env.local.example` を参考にVercelダッシュボードで設定。
 
 ---
 
-## STEP 7 — Stripe Webhook 設定（5分）
+## Step 5: GitHub Actions設定（5分）
 
-1. Stripe Dashboard → 「開発者」→「Webhook」
-2. 「エンドポイントを追加」
-3. URL: `https://coffee-xxx.vercel.app/api/stripe/webhook`
-4. イベント選択:
-   - `checkout.session.completed`
-   - `invoice.payment_succeeded`
-   - `customer.subscription.deleted`
-5. 「エンドポイントを追加」→ **署名シークレット** (`whsec_xxx`) をコピー
-6. Vercel 環境変数 `STRIPE_WEBHOOK_SECRET` に設定 → 再デプロイ
+リポジトリ → Settings → Secrets and variables → Actions → 「New repository secret」
+
+以下を追加：
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `GEMINI_API_KEY`
 
 ---
 
-## STEP 8 — GitHub Actions シークレット設定（5分）
-
-GitHub リポジトリ → Settings → Secrets and variables → Actions:
-
-| Secret名 | 値 |
-|---|---|
-| `GEMINI_API_KEY` | Step 2 のキー |
-| `NEXT_PUBLIC_SUPABASE_URL` | Step 1 のURL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Step 1 のキー |
-
-設定後、毎日 AM 3:00 JST に自動記事生成が走る。
-手動テストは GitHub → Actions → 「Daily Article Generation」→ 「Run workflow」
-
----
-
-## STEP 9 — 動作確認（10分）
+## Step 6: 動作確認
 
 ```bash
-# ローカルで最終確認
+# ローカルで起動
+cp .env.local.example .env.local
+# .env.local に各APIキーを入力
 npm run dev
-# http://localhost:3000 でLPが表示されるか確認
-# /admin で管理画面が開くか確認
 ```
 
-1. LPの「今すぐ始める」でStripe Checkoutが開くか
-2. テスト用カード `4242 4242 4242 4242` で決済
-3. `/admin` でMRRが ¥980 になるか
-4. GitHub Actions を手動実行 → `/admin` に記事のdraftが出るか
-5. 記事を「公開」→ `/articles` に表示されるか
+- `http://localhost:3000` → 記事一覧が表示される（シードデータ10本）
+- `http://localhost:3000/pricing` → 料金ページ（Stripeが動く）
+- `http://localhost:3000/admin` → ダッシュボード（MRR・記事数・閲覧数）
 
 ---
 
-## 公開後にやること（月1回・30分）
+## 収益化が始まる流れ
 
-- Supabase Dashboard → `keyword_queue` テーブルに新キーワードを追加
-- Google Search Console でインデックス確認
-- `/admin` でdraft記事を承認・公開
-
----
-
-## 収益シミュレーション
-
-| 会員数 | MRR |
-|---|---|
-| 10人 | ¥9,800 |
-| 50人 | ¥49,000 |
-| 100人 | ¥98,000 |
-| 300人 | ¥294,000 |
-
-集客方法: SNS（X/Twitter）でターゲットキーワードの投稿 → LPへ誘導
+```
+GitHub Actions（毎朝3時）
+  → Gemini で記事生成 → Supabase に draft 保存
+  → あなたが /admin で確認 → published に変更
+  → 記事が公開 → SEOで流入
+  → ペイウォールに当たった人が /pricing へ
+  → Stripe で月額¥980 で決済
+  → 収益！
+```

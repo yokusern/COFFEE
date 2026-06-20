@@ -21,7 +21,7 @@ export class ContentEngine {
         const article = await generateArticle(keyword.keyword, keyword.niche ?? '');
 
         const { count } = await this.db
-          .from('content_articles')
+          .from('articles')
           .select('*', { count: 'exact', head: true })
           .eq('slug', article.slug);
         if ((count ?? 0) > 0) {
@@ -29,7 +29,7 @@ export class ContentEngine {
           continue;
         }
 
-        await this.db.from('content_articles').insert({
+        await this.db.from('articles').insert({
           slug: article.slug,
           title: article.title,
           meta_title: article.meta_title,
@@ -44,9 +44,8 @@ export class ContentEngine {
           human_reviewed: false,
         });
 
-        await this.db.from('keywords').update({
-          last_used_at: new Date().toISOString(),
-          article_count: keyword.article_count + 1,
+        await this.db.from('keyword_queue').update({
+          used_at: new Date().toISOString(),
         }).eq('id', keyword.id);
 
         generated++;
@@ -71,11 +70,11 @@ export class ContentEngine {
 
   private async selectNextKeyword() {
     const { data } = await this.db
-      .from('keywords')
+      .from('keyword_queue')
       .select('*')
       .eq('is_active', true)
       .order('priority', { ascending: false })
-      .order('last_used_at', { ascending: true, nullsFirst: true })
+      .order('used_at', { ascending: true, nullsFirst: true })
       .limit(1)
       .single();
     return data;

@@ -9,7 +9,7 @@ export default async function ArticlePage({ params }: Props) {
   const db = createServiceClient();
 
   const { data: article } = await db
-    .from('content_articles')
+    .from('articles')
     .select('*')
     .eq('slug', slug)
     .eq('status', 'published')
@@ -21,7 +21,7 @@ export default async function ArticlePage({ params }: Props) {
   const customerPlan = cookieStore.get('customer_plan')?.value ?? 'free';
   const isPaid = customerPlan === 'pro' || customerPlan === 'enterprise';
 
-  void db.from('content_views').insert({
+  void db.from('article_views').insert({
     article_id: article.id,
     hit_paywall: !isPaid,
   });
@@ -46,7 +46,7 @@ export default async function ArticlePage({ params }: Props) {
             続きを読むには有料プランが必要です
           </p>
           <p style={{ color: '#6b7280', margin: '0 0 24px' }}>
-            月額 ¥4,980 で全記事が読み放題になります
+            月額 ¥980 で全記事が読み放題になります
           </p>
           <a href="/pricing" style={{
             padding: '12px 32px', background: '#1a1a1a', color: '#fff',

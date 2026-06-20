@@ -1,0 +1,40 @@
+name: Daily Content Generation
+
+on:
+  schedule:
+    # 毎日 AM 3:00 JST (= UTC 18:00 前日)
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      force_publish:
+        description: '生成後すぐにpublishedにする (true/false)'
+        default: 'false'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate article
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npx tsx system/generate-article.ts
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Daily content generation failed. Check Gemini API key and Supabase connection."

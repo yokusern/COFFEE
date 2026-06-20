@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   title: {
-    default: process.env.NEXT_PUBLIC_SITE_NAME ?? 'Aether Mint',
-    template: `%s | ${process.env.NEXT_PUBLIC_SITE_NAME ?? 'Aether Mint'}`,
+    default: process.env.NEXT_PUBLIC_SITE_NAME ?? '副業ラボ',
+    template: `%s | ${process.env.NEXT_PUBLIC_SITE_NAME ?? '副業ラボ'}`,
   },
   description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION,
   openGraph: {
